@@ -1,4 +1,5 @@
-model_store/*
+model_store/*.mar
+logs/
 temp/
 .neptune/
 # Byte-compiled / optimized / DLL files
