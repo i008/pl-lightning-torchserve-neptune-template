@@ -1,5 +1,4 @@
 import os
-
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.loggers import NeptuneLogger
@@ -7,7 +6,8 @@ from pytorch_lightning.loggers.base import DummyLogger
 from pytorch_lightning.utilities.cli import LightningCLI
 
 NEPTUNE_KEY = os.environ.get('NEPTUNE_TOKEN')
-NEPTUNE_PROJECT = 'i008/demo'
+NEPTUNE_PROJECT = os.environ.get('NEPTUNE_PROJECT', 'i008/demo')
+EXPERIMENTS_PATH = '/home/i008/demo_exps'
 
 
 class CLI(LightningCLI):
@@ -25,7 +25,7 @@ if __name__ == '__main__':
         api_key=NEPTUNE_KEY,
         project_name=NEPTUNE_PROJECT,
         upload_source_files=["**/*.py", "**/*.ipynb"],
-        experiment_name='/home/i008/demo_exps'
+        experiment_name=EXPERIMENTS_PATH
     )
 
     callbacks = [LearningRateMonitor()]
@@ -36,8 +36,6 @@ if __name__ == '__main__':
         'callbacks': callbacks,
         'devices': [0],
         'accelerator': 'gpu',
-        # 'auto_scale_batch_size': True,
-        # 'auto_lr_find': True,
         'precision': 16
 
     }
