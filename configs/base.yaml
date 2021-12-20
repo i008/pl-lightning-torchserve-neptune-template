@@ -1,0 +1,26 @@
+# train and validate on all classes with nalancing
+
+model:
+  class_path: model.PlClassificationModel
+  init_args:
+    backbone_lr: 0.0001
+    classifier_lr: 0.001
+    base_model: resnet18
+    backbone_pretrained: True
+    num_classes: 2
+    pooling: max
+    normalize_pool: false
+    clf_head: standard
+    checkpoint_monitor: val/f1_macro
+    optimizing_strategy: regular1 #cycling #
+    label_smoothing: 0.0
+
+data:
+  class_path: data.AllClassesBalanced
+  init_args:
+    path_to_labels_df: './datasets/catsvsdogs_small.df.pickle'
+    base_path: './datasets/catsvsdogs_small_images'
+    batch_size: 16
+    image_size: 224
+    augmentation_strategy: hard_1  # noaug
+    train_workers: 2
