@@ -15,7 +15,7 @@ model:
     label_smoothing: 0.0
 
 data:
-  class_path: data.AllClassesBalanced
+  class_path: data.BaseDatasetAllClasses
   init_args:
     path_to_labels_df: './datasets/catsvsdogs_small.df.pickle'
     base_path: './datasets/catsvsdogs_small_images'

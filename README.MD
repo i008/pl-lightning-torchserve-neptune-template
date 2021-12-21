@@ -18,11 +18,11 @@ The main features are:
 
 - its simple and not bloated with complicated tools and flows.
 - run experiments from a pre-defined YAML config that is easy to change(./experiment_configs/)
-- deployment and usage of the model should be easily done using the uploaded checkpoints and config files.
+- deployment,packaging and usage of the model should be easily done using the uploaded checkpoints and config files.
 - use different base models (from different packages)
 - model packaging is aware of the type of model that is trained and the pre and post-processing steps can be adjusted.
   for instance, if your model needs different normalization you can make torchserve to be aware of that.
-- (almost)everything is logged and reproducible
+- (almost) everything is logged and reproducible
 
 
 
@@ -44,7 +44,7 @@ export NEPTUNE_PROJECT
 The experiment here is a simple cat vs dogs classification. For running the experiments the new pytorch_lightning CLI
 API is used. It's very convenient to keep the experiment mess under control.
 
-example pytorch_lightning yaml file:
+example pytorch_lightning experiment yaml file:
 
 ```YAML
 
@@ -104,7 +104,7 @@ torchserve --start --model-store ./model_store --models DEM-11=./model_store/DEM
 ### Test torchserve
 
 ```bash
-curl http://127.0.0.1:8080/predictions/DEM-11  -T /home/i008/6049_2.png 
+curl http://127.0.0.1:8080/predictions/DEM-11  -T datasets/catsvsdogs_small_images/cat.1969.jpg
 ```
 
 

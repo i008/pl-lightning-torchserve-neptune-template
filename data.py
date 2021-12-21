@@ -86,16 +86,13 @@ class BaseClassificationDataModule(pl.LightningDataModule):
     @abstractmethod
     def prepare(self) -> [pd.DataFrame, pd.DataFrame]:
         """
-        Implement a strategy that will:
-
-        - reframe the labels of the dataset. For instance combine labels together
-        - split the dataset after that.
-
+        While subclassing override this method to change the behaviour of the dataset.
+        For instance you can reframe the problem, reduce the number of classes or whatever else you might need to do.
         """
         pass
 
 
-class AllClassesBalanced(BaseClassificationDataModule):
+class BaseDatasetAllClasses(BaseClassificationDataModule):
     """
     Create subclasses to create a dataset with differnet behaviour, split, classes etc.
     """

@@ -177,6 +177,11 @@ class UnifiedBackboneBuilder(nn.Module):
         else:
             return self.backbone.features(x)
 
+    @staticmethod
+    def supported_models(self):
+        return pretrainedmodels.__dict__.keys()
+
+
 
 class PlClassificationModel(pl.LightningModule):
     def __init__(self,
@@ -207,7 +212,7 @@ class PlClassificationModel(pl.LightningModule):
         self.optimizing_strategy = optimizing_strategy
         self.label_smoothing = label_smoothing
         self.freeze_backbone = freeze_backbone
-        self.upload_best = True
+        self.upload_best = upload_best
 
         self.last_best_model = ''
 
@@ -286,13 +291,15 @@ class PlClassificationModel(pl.LightningModule):
         return {'loss': total_loss, 'outputs': torch2np(outputs)}
 
     def __upload_checkpoints(self):
+
+
+
         if self.upload_best:
             current_best = self.trainer.callbacks[-1].best_model_path
             if not self.last_best_model and current_best:
                 self.last_best_model = current_best
 
             if self.last_best_model != current_best:
-                print(current_best)
                 self.logger.log_artifact(current_best, 'best.pt')
                 self.last_best_model = current_best
 

@@ -43,6 +43,7 @@ if __name__ == '__main__':
     cli = CLI(
         pl.LightningModule,
         pl.LightningDataModule,
+
         subclass_mode_model=True,
         subclass_mode_data=True,
         trainer_defaults=train_defaults,

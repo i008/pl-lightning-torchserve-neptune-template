@@ -36,12 +36,19 @@ AUGMENTATIONS = {
 }
 
 
+def get_augment(augment_level):
+    if augment_level not in AUGMENTATIONS:
+        raise ValueError(f"Augmentation strategy has to be one of {AUGMENTATIONS.keys()}")
+    return AUGMENTATIONS[augment_level]
+
+
 def build_post_transform(normalization: str):
     if normalization == 'imagenet':
         post_transform = [A.Normalize(), ToTensorV2()]
 
     elif normalization == 'vit':
-        post_transform = [A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)), ToTensorV2()]
+        post_transform = [A.Normalize(mean=(0.5, 0.5, 0.5),
+                                      std=(0.5, 0.5, 0.5)), ToTensorV2()]
 
     else:
         raise ValueError("Wrong normalization type")
@@ -56,12 +63,9 @@ def build_inference_transform(normalization, size=224):
 
 
 def build_training_transform(size, normalization, augment_level: str):
-    if augment_level not in AUGMENTATIONS:
-        raise ValueError(f"Augmentation strategy has to be one of {AUGMENTATIONS.keys()}")
     pre_transform = [A.LongestMaxSize(size), A.PadIfNeeded(size, size, border_mode=0)]
     post_transform = build_post_transform(normalization)
-
-    augment_transform = AUGMENTATIONS[augment_level]
+    augment_transform = get_augment(augment_level)
 
     return A.Compose([*pre_transform, *augment_transform, *post_transform])
 
@@ -74,4 +78,7 @@ def build_eval_transform(normalization, size):
 
 
 def post_process_handle(data):
+    """
+    What happens wit the predictions of the model on torchserve side
+    """
     return [{'logits': data['logits'].argmax(axis=1).tolist()}]
