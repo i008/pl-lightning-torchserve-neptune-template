@@ -41,7 +41,7 @@ def build_post_transform(normalization: str):
         post_transform = [A.Normalize(), ToTensorV2()]
 
     elif normalization == 'vit':
-        post_transform = [A.Normalize(mean=(0.5, 0.5, 0.5),std=(0.5, 0.5, 0.5)), ToTensorV2()]
+        post_transform = [A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)), ToTensorV2()]
 
     else:
         raise ValueError("Wrong normalization type")

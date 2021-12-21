@@ -1,10 +1,8 @@
 ### Description
 
 
-This repository implements a very simple but powerful monitoring+deployment flow for a simple computer vision
-application (classification) but the idea is that it's easily extendable to other problems.
-If you dont want to use neptune as the logger or you use something else you will have to adjust some parts of the code
-(especially how the weights are fetched during packaging)
+This repository implements a very simple but powerful training+monitoring+deployment flow for a simple computer vision
+application (classification) but the idea is, that it's easily extendable to other problems.
 
 It uses:
 
@@ -13,10 +11,14 @@ It uses:
 - torchserve (to serve the packaged model)
 - neptune.ai (to monitor experiments, store metadata, and checkpoints-weights)
 
+If you dont want to use neptune as the metadata store or you use something else you will have to adjust some parts of the code
+(especially how the weights are fetched during packaging)
+
 The main functionalities are:
 
 - run experiments from a defined YAML config that is easy to change(./experiment_configs/)
 - deployment and usage of the model should be easily done using the uploaded checkpoints and config files.
+- use different base models (from different packages)
 - model packaging is aware of the type of model that is trained and the pre and post-processing steps can be adjusted.
   for instance, if your model needs different normalization you can make torchserve to be aware of that.
 - everything is logged and reproducible
@@ -40,6 +42,8 @@ export NEPTUNE_PROJECT
 
 The experiment here is a simple cat vs dogs classification. For running the experiments the new pytorch_lightning CLI
 API is used. It's very convenient to keep the experiment mess under control.
+
+example pytorch_lightning yaml file:
 
 ```YAML
 
@@ -83,9 +87,8 @@ The packaging does the following things:
 - Fetch experiment **yaml** and best checkpoint from **neptune.ai**
 - trace the model, create a torchscript file
 - package the model to a *.mar file using PyTorch-model-archiver
-- adds torchserve_cusom_handler and pre_post_processing to the archive (no other dependencies)
-  since pre and post-processing of the data (before and after model inference) is mostly dependent on the model being
-  used we have to include this logic somehow.
+- adds torchserve_cusom_handler and pre_post_processing to the archive.
+
 
 ```bash
 python package_for_torchserve.py  --experiment_name DEM-11  --model_store_path ./model_store
@@ -94,7 +97,7 @@ python package_for_torchserve.py  --experiment_name DEM-11  --model_store_path .
 ### Start torchseve
 
 ```bash
-torchserve --start --model-store ./model_store --models DEM-11=DEM-11.mar
+torchserve --start --model-store ./model_store --models DEM-11=./model_store/DEM-11.mar
 ```
 
 ### Test torchserve
