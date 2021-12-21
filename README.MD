@@ -2,7 +2,7 @@
 
 
 This repository implements a very simple but powerful training+monitoring+deployment flow for a simple computer vision
-application (classification) but the idea is, that it's easily extendable to other problems.
+application (classification)  - but it should be relatively extendable to other problems.
 
 It uses:
 
@@ -11,17 +11,18 @@ It uses:
 - torchserve (to serve the packaged model)
 - neptune.ai (to monitor experiments, store metadata, and checkpoints-weights)
 
-If you dont want to use neptune as the metadata store or you use something else you will have to adjust some parts of the code
+If you dont want to use neptune as the metadata store or you use something else like WnB you will have to adjust some parts of the code
 (especially how the weights are fetched during packaging)
 
-The main functionalities are:
+The main features are:
 
-- run experiments from a defined YAML config that is easy to change(./experiment_configs/)
+- its simple and not bloated with complicated tools and flows.
+- run experiments from a pre-defined YAML config that is easy to change(./experiment_configs/)
 - deployment and usage of the model should be easily done using the uploaded checkpoints and config files.
 - use different base models (from different packages)
 - model packaging is aware of the type of model that is trained and the pre and post-processing steps can be adjusted.
   for instance, if your model needs different normalization you can make torchserve to be aware of that.
-- everything is logged and reproducible
+- (almost)everything is logged and reproducible
 
 
 
