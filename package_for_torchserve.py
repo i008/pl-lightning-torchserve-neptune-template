@@ -15,16 +15,16 @@ from torch.hub import load_state_dict_from_url
 
 DEVICE = 'cpu'
 NEPTUNE_KEY = os.environ.get('NEPTUNE_TOKEN')
+TRACE_INPUT = torch.randn(1, 3, 224, 224)
 
 
 def load_model_from_config(config_path, checkpoint_path: str):
     parser = ArgumentParser()
     parser.add_argument('--model', type=pl.LightningModule)
-    parser.add_argument('--data', type=pl.LightningDataModule)  # to ignore data
+    parser.add_argument('--data', type=pl.LightningDataModule)
     config = parser.parse_path(config_path)
     cls = parser.instantiate_classes(config)
-    model = cls['model']
-    data = cls['data']
+    model, data = cls['model'], cls['data']
     if 'http' in checkpoint_path:
         state_dict = load_state_dict_from_url(checkpoint_path, map_location=DEVICE)['state_dict']
     else:
@@ -51,7 +51,7 @@ def package_pl_model(project_name, pl_checkpoints_path, experiment_name, checkpo
 
         model, data = load_model_from_config(f'{td}/config.yaml', full_checkpoint_path)
         model.to_torchscript(serialized_file,
-                             example_inputs=torch.randn(1, 3, 224, 224),
+                             example_inputs=TRACE_INPUT,
                              method='trace',
                              strict=False)
 
