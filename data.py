@@ -1,5 +1,6 @@
 import pathlib
 from abc import abstractmethod
+from typing import Union
 
 import PIL
 import numpy as np
@@ -42,7 +43,7 @@ class BaseClassificationDataModule(pl.LightningDataModule):
                  path_to_labels_df: str,
                  base_path: str,
                  batch_size: int,
-                 base_model_data=None,
+                 base_model_data: Union[None, str] = None,
                  image_size=224,
                  train_workers=4,
                  augmentation_strategy='hard_1',
