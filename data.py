@@ -42,11 +42,10 @@ class BaseClassificationDataModule(pl.LightningDataModule):
                  path_to_labels_df: str,
                  base_path: str,
                  batch_size: int,
-                 base_model_data: str,
+                 base_model_data=None,
                  image_size=224,
                  train_workers=4,
                  augmentation_strategy='hard_1',
-
                  ):
         super().__init__()
         self.path_to_labels_df = path_to_labels_df

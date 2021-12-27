@@ -44,11 +44,10 @@ def get_augment(augment_level: str) -> List[A.BasicTransform]:
     return AUGMENTATIONS[augment_level]
 
 
-def build_post_transform(model, mean=None, std=None):
+def build_post_transform(model: str, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
     if model:
         from timm.models.registry import _model_default_cfgs
-
-        cfg = _model_default_cfgs[model.split('timm/')[-1]]
+        cfg = _model_default_cfgs[model.split('timm/')[-1] if 'timm/' in model else model]
         mean = cfg['mean']
         std = cfg['std']
         print("Using data config", cfg)

@@ -3,9 +3,8 @@ torchmetrics==0.6.0
 scikit_learn
 pandas
 torch==1.10.0
-jupyterlab
 matplotlib==3.4.3
 albumentations[imgaug]==1.1.0
 pretrainedmodels==0.7.4
-neptune-client
+neptune-client==0.9.8
 jsonargparse[signatures]

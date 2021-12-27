@@ -188,8 +188,7 @@ class PlClassificationModel(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        self.backbone = UnifiedBackboneBuilder(base_model,
-                                               pretrained=backbone_pretrained)  # pretrainedmodels.__dict__[base_model](pretrained=backbone_pretrained)
+        self.backbone = UnifiedBackboneBuilder(base_model, pretrained=backbone_pretrained)
 
         if self.freeze_backbone:
             freeze(self.backbone)
