@@ -1,5 +1,6 @@
 import pathlib
 from abc import abstractmethod
+
 import PIL
 import numpy as np
 import pandas as pd
@@ -7,6 +8,7 @@ import pytorch_lightning as pl
 from albumentations.core.composition import Compose
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader, Dataset
+
 from pre_post_processing import build_eval_transform, build_post_transform, build_training_transform
 
 
@@ -40,26 +42,26 @@ class BaseClassificationDataModule(pl.LightningDataModule):
                  path_to_labels_df: str,
                  base_path: str,
                  batch_size: int,
+                 base_model_data: str,
                  image_size=224,
-                 normalize: str = 'imagenet',
                  train_workers=4,
-                 augmentation_strategy='medium3',
+                 augmentation_strategy='hard_1',
+
                  ):
         super().__init__()
         self.path_to_labels_df = path_to_labels_df
         self.base_path = base_path
         self.size = image_size
+        self.base_model_data = base_model_data
         self.augmentation_strategy = augmentation_strategy
         self.batch_size = batch_size
-        self.normalize = normalize
         self.train_workers = train_workers
 
-        if not isinstance(self.path_to_labels_df, pd.DataFrame):
-            self.df = pd.read_pickle(self.path_to_labels_df)
+        self.df = self._load_df_meta(path_to_labels_df)
 
-        self.post_transform = build_post_transform(self.normalize)
-        self.train_transform = build_training_transform(self.size, self.normalize, self.augmentation_strategy)
-        self.val_transform = build_eval_transform(self.normalize, self.size)
+        self.post_transform = build_post_transform(self.base_model_data)
+        self.train_transform = build_training_transform(self.size, self.base_model_data, self.augmentation_strategy)
+        self.val_transform = build_eval_transform(self.base_model_data, self.size)
 
         self.df_train, self.df_val = None, None
 
@@ -83,6 +85,11 @@ class BaseClassificationDataModule(pl.LightningDataModule):
         self.train_ds = ImageClassificationDataset(self.df_train, self.base_path, self.train_transform)
         self.val_ds = ImageClassificationDataset(self.df_val, self.base_path, self.val_transform)
 
+    def _load_df_meta(self, path_or_df):
+        if not isinstance(path_or_df, pd.DataFrame):
+            path_or_df = pd.read_pickle(self.path_to_labels_df)
+        return path_or_df
+
     @abstractmethod
     def prepare(self) -> [pd.DataFrame, pd.DataFrame]:
         """
@@ -100,7 +107,7 @@ class BaseDatasetAllClasses(BaseClassificationDataModule):
     def __str__(self):
         return 'Base'
 
-    def prepare(self) -> [pd.DataFrame, pd.DataFrame]:
+    def prepare(self) -> None:
         self.encoder = LabelEncoder()
 
         self.df['label_encoded'] = self.encoder.fit_transform(self.df.label)

@@ -95,6 +95,8 @@ The packaging does the following things:
 python package_for_torchserve.py  --experiment_name DEM-11  --model_store_path ./model_store
 ```
 
+*DEM-11 is a neptune unique experiment-ID
+
 ### Start torchseve
 
 ```bash

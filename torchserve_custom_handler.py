@@ -97,7 +97,7 @@ class CustomHandler(abc.ABC):
         self.model.eval()
         logger.debug('Model file %s loaded successfully', model_pt_path)
         self.initialized = True
-        self.image_processing = build_inference_transform(self.manifest['normalization'], size=224)
+        self.image_processing = build_inference_transform(self.manifest['base_model'], size=224)
 
     def _load_torchscript_model(self, model_pt_path):
         """Loads the PyTorch model and returns the NN model object.

@@ -1,7 +1,9 @@
+from typing import Dict, List
+
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-AUGMENTATIONS = {
+AUGMENTATIONS: Dict[str, List[A.BasicTransform]] = {
     "hard_1": [
         A.RandomRotate90(),
         A.Flip(),
@@ -36,43 +38,41 @@ AUGMENTATIONS = {
 }
 
 
-def get_augment(augment_level):
+def get_augment(augment_level: str) -> List[A.BasicTransform]:
     if augment_level not in AUGMENTATIONS:
         raise ValueError(f"Augmentation strategy has to be one of {AUGMENTATIONS.keys()}")
     return AUGMENTATIONS[augment_level]
 
 
-def build_post_transform(normalization: str):
-    if normalization == 'imagenet':
-        post_transform = [A.Normalize(), ToTensorV2()]
+def build_post_transform(model, mean=None, std=None):
+    if model:
+        from timm.models.registry import _model_default_cfgs
 
-    elif normalization == 'vit':
-        post_transform = [A.Normalize(mean=(0.5, 0.5, 0.5),
-                                      std=(0.5, 0.5, 0.5)), ToTensorV2()]
+        cfg = _model_default_cfgs[model.split('timm/')[-1]]
+        mean = cfg['mean']
+        std = cfg['std']
+        print("Using data config", cfg)
 
-    else:
-        raise ValueError("Wrong normalization type")
-
-    return post_transform
+    return [A.Normalize(mean=mean, std=std), ToTensorV2()]
 
 
-def build_inference_transform(normalization, size=224):
+def build_inference_transform(model: str, size=224) -> A.Compose:
     pre_transform = [A.LongestMaxSize(size), A.PadIfNeeded(size, size, border_mode=0)]
-    post_transform = build_post_transform(normalization)
+    post_transform = build_post_transform(model)
     return A.Compose([*pre_transform, *post_transform])
 
 
-def build_training_transform(size, normalization, augment_level: str):
+def build_training_transform(size, model, augment_level: str) -> A.Compose:
     pre_transform = [A.LongestMaxSize(size), A.PadIfNeeded(size, size, border_mode=0)]
-    post_transform = build_post_transform(normalization)
+    post_transform = build_post_transform(model)
     augment_transform = get_augment(augment_level)
 
     return A.Compose([*pre_transform, *augment_transform, *post_transform])
 
 
-def build_eval_transform(normalization, size):
+def build_eval_transform(model, size) -> A.Compose:
     pre_transform = [A.LongestMaxSize(size), A.PadIfNeeded(size, size, border_mode=0)]
-    post_transform = build_post_transform(normalization)
+    post_transform = build_post_transform(model)
 
     return A.Compose([*pre_transform, *post_transform])
 

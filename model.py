@@ -1,23 +1,21 @@
+import tempfile
 from typing import Any, Optional
 
-import efficientnet_pytorch
 import numpy as np
 import pandas as pd
-import pretrainedmodels
 import pytorch_lightning as pl
+import timm
 import torch
-from efficientnet_pytorch import EfficientNet
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import classification_report, confusion_matrix
 from torch import nn
 from torch.optim.lr_scheduler import CyclicLR, StepLR
 from torchmetrics import Accuracy, F1
-from transformers import ViTModel
 
 
-def build_classification_head(in_features,
-                              out_features,
-                              strategy='standard'):
+def build_classification_head(in_features: int,
+                              out_features: int,
+                              strategy: str = 'standard'):
     if strategy == 'fastai':
         return fastai_classification_head(in_features, out_features)
 
@@ -25,9 +23,10 @@ def build_classification_head(in_features,
         return nn.Linear(in_features, out_features)
 
 
-def fastai_classification_head(in_features, out_features):
+def fastai_classification_head(in_features: int, out_features: int) -> nn.Module:
     """
-    Improved classification head
+    Improved classification head, similar to the one used in fastai baseline models.
+
     """
     return nn.Sequential(
         nn.BatchNorm1d(in_features, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
@@ -140,53 +139,27 @@ class UnifiedBackboneBuilder(nn.Module):
         super().__init__()
         self.model_name = model_name
         self.pretrained = pretrained
-        self.normalization = 'standard'
         self.is_pretrained_models = False
 
-        if model_name in pretrainedmodels.__dict__:
-            self.is_pretrained_models = True  # coming from pretraeindmodels package
-            if pretrained:
-                pretrained = 'imagenet'
-            else:
-                pretrained = None
-            self.backbone = pretrainedmodels.__dict__[model_name](pretrained=pretrained)
-            self.num_feature_planes = self.backbone.last_linear.in_features
-
-        elif 'efficientnet' in model_name:
-            if self.pretrained:
-                self.backbone = EfficientNet.from_pretrained(model_name)
-                self.num_feature_planes = self.backbone._fc.in_features
-
-            else:
-                raise NotImplemented("Only pretrained efficientnet supported")
-
-        elif 'vit' in model_name:
-            self.backbone = ViTModel.from_pretrained(model_name)
-            self.normalization = 'vit'
-            self.num_feature_planes = 768
+        if 'timm' in model_name:
+            model_name = model_name.split('timm/')[-1]
+            assert model_name in timm.list_models()
+            self.backbone = timm.create_model(model_name, pretrained=self.pretrained, num_classes=0)
+            self.num_feature_planes = self.backbone.num_features
+            cfg = timm.data.resolve_data_config({}, model=self.backbone, verbose=True)
+            print(cfg)
 
     def features_forward(self, x):
-        if isinstance(self.backbone, efficientnet_pytorch.model.EfficientNet):
-            return self.backbone.extract_features(x)
-        elif 'vit' in self.model_name:
-            output = self.backbone(pixel_values=x)
-            output = output.last_hidden_state[:, 0, :]
-            output = output[:, :, None, None]  # add 2 dimensiosn at the end to be coherent with other models before GAP
-            return output
+        return self.backbone(x)
 
-        else:
-            return self.backbone.features(x)
-
-    @staticmethod
-    def supported_models(self):
-        return pretrainedmodels.__dict__.keys()
-
+    @property
+    def num_features(self):
+        return self.backbone.num_features
 
 
 class PlClassificationModel(pl.LightningModule):
     def __init__(self,
                  base_model: str,
-                 pooling: str,
                  backbone_lr: float,
                  classifier_lr: float,
                  num_classes: int,
@@ -196,13 +169,10 @@ class PlClassificationModel(pl.LightningModule):
                  checkpoint_monitor: str = 'val/f1_macro',
                  backbone_pretrained: bool = True,  # or None
                  freeze_backbone=False,
-                 upload_best=True,
-                 normalize_pool: bool = False):
-
+                 upload_best=True
+                 ):
         super().__init__()
         self.base_model = base_model
-        self.pooling = pooling
-        self.normalize_pool = normalize_pool
         self.num_classes = num_classes
         self.backbone_pretrained = backbone_pretrained
         self.clf_head = clf_head
@@ -218,18 +188,14 @@ class PlClassificationModel(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        self.backbone = UnifiedBackboneBuilder(base_model, pretrained=backbone_pretrained)  # pretrainedmodels.__dict__[base_model](pretrained=backbone_pretrained)
+        self.backbone = UnifiedBackboneBuilder(base_model,
+                                               pretrained=backbone_pretrained)  # pretrainedmodels.__dict__[base_model](pretrained=backbone_pretrained)
 
         if self.freeze_backbone:
             freeze(self.backbone)
 
-        self.pooler = AdaptiveConcatPooler(how=pooling)
-        self.num_feature_planes = self.backbone.num_feature_planes
-        if self.pooling == 'both':
-            self.num_feature_planes = int(2 * self.num_feature_planes)
-
         self.classifier = build_classification_head(
-            self.num_feature_planes,
+            self.backbone.num_features,
             self.num_classes,
             strategy=self.clf_head
         )
@@ -249,8 +215,7 @@ class PlClassificationModel(pl.LightningModule):
 
     def forward(self, x):
         features = self.backbone.features_forward(x)
-        pooled_features = self.pooler(features)
-        logits = self.classifier(pooled_features)
+        logits = self.classifier(features)
 
         return {'logits': logits}
 
@@ -292,8 +257,6 @@ class PlClassificationModel(pl.LightningModule):
 
     def __upload_checkpoints(self):
 
-
-
         if self.upload_best:
             current_best = self.trainer.callbacks[-1].best_model_path
             if not self.last_best_model and current_best:
@@ -321,9 +284,10 @@ class PlClassificationModel(pl.LightningModule):
         df_res['cls'] = ks[:-3]
         df_res = df_res.sort_values('f1-score')
 
-        with open(f'temp/{self.current_epoch}_scores.html', 'w') as fo:
-            fo.write(df_res.to_html())
-            self.logger.log_artifact(f'temp/{self.current_epoch}_scores.html')
+        with tempfile.TemporaryDirectory() as td:
+            with open(f'{td}/{self.current_epoch}_scores.html', 'w') as fo:
+                fo.write(df_res.to_html())
+                self.logger.log_artifact(f'{td}/{self.current_epoch}_scores.html')
 
     def validation_epoch_end(self, outputs) -> None:
 
